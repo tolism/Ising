@@ -12,10 +12,19 @@
 #include <stdlib.h>
 #include <math.h>
 
+#define BLOCK_SIZE_X 6
+#define BLOCK_SIZE_Y 6
+
+#define GRID_SIZE_X 517
+#define GRID_SIZE_Y 517
+
 #define old(i,j,n) *(old+i*n+j)
 #define current(i,j,n) *(current+i*n+j)
 #define w(i,j) *(w+i*5+j)
+#define d_w(i,j) *(d_w+i*5+j)
 #define G(i,j,n) *(G+i*n+j)
+#define d_current(i,j,n) *(d_current+i*n+j)
+#define d_old(i,j,n) *(d_old+i*n+j)
 
 void swapElement(int  ** one, int  ** two) {
   int  * temp = * one;
@@ -23,59 +32,87 @@ void swapElement(int  ** one, int  ** two) {
   * two = temp;
 }
 
-double influenceCalc(int *old , double *w , int n , int i , int j  ){
-  double influence = 0;
-  for(int ii=0; ii<5; ii++){
-    for(int jj=0; jj<5; jj++){
-      influence +=  w(ii,jj) * old((i-2+n+ii)%n, (j-2+n+jj)%n, n);
-    }
-  }
-return influence;
+//grafika grid/block
+//pou pernaw ti
+
+__global__
+   void kernel2D(int *d_current, int *d_old, double *d_w, int n)
+{
+    // Compute column and row indices.
+     int r = blockIdx.x * blockDim.x + threadIdx.x;
+     int c = blockIdx.y * blockDim.y + threadIdx.y;
+    //const int i = r * n + c; // 1D flat index
+
+    double influence = 0;
+    // NA VALW SIGOURA ENAN ELEGXO EDW PERA AN EIMASTE SE BOUNDS
+    //  // Check if within bounds.
+    if ((c >= n) || (r >= n))
+        return;
+    // COLUMN H ROW MAJOR AUTES OI PIPES
+         for(int i = r; i<n; i+=blockDim.x*gridDim.x){
+            for(int j = c; j<n; j+=blockDim.y*gridDim.y){
+
+                  for(int ii=0; ii<5; ii++){
+                    for(int jj=0; jj<5; jj++){
+                      influence +=  d_w(ii,jj) * d_old((i-2+n+ii)%n, (j-2+n+jj)%n, n);
+                    }
+                  }
+                  // magnetic moment gets the value of the SIGN of the weighted influence of its neighbors
+                  if(fabs(influence) < 10e-7){
+                    d_current(i,j,n) = d_old(i,j,n); // remains the same in the case that the weighted influence is zero
+                  }
+                  else if(influence > 10e-7){
+                    d_current(i,j,n) = 1;
+                  }
+                  else if(influence < 0){
+                    d_current(i,j,n) = -1;
+                  }
+                  influence = 0;
+                }
+              }
+
 }
+
 
 void ising( int *G, double *w, int k, int n){
 
+
+ dim3 block(BLOCK_SIZE_X,BLOCK_SIZE_Y);
+ dim3 grid((GRID_SIZE_X+block.x-1)/block.x,(GRID_SIZE_Y+block.y - 1)/block.y);
+
+
   int * old = (int*) malloc(n*n*sizeof(int)); // old spin lattice
-  int * current= (int*) malloc(n*n*sizeof(int)); // current spin lattice
-//  int * tmp;
-  double influence; // weighted influence of the neighbors
+  int * current = (int*) malloc(n*n*sizeof(int)); // current spin lattice
 
-//Elearning tester checks the values of the G so by swaping
-// The "head" pointer it can not pass the validation
-// So we manual copy
+  int * d_old;
+  int * d_current;
+  double * d_w;
 
-  memcpy(old,G,n*n*sizeof(int));
+
+    if( cudaMalloc((void **)&d_old ,n*n*sizeof(int)) != cudaSuccess  || cudaMalloc((void **)&d_current,n*n*sizeof(int))   != cudaSuccess   || cudaMalloc((void **)&d_w, WSIZE*WSIZE*sizeof(double))   != cudaSuccess){
+      printf("Problem at memory allocation");
+      exit(0);
+    }
+
+  cudaMemcpy(d_w, w, 5*5*sizeof(double), cudaMemcpyHostToDevice );
+  cudaMemcpy(d_old, G, n*n*sizeof(int), cudaMemcpyHostToDevice );
+
 
   // run for k steps
   for(int l=0; l<k; l++){
 
-    // for each current[i][j] point
-    for(int i=0; i<n; i++){
-      for(int j=0; j<n; j++){
 
-        // calculation of weighted influence
-        influence = influenceCalc(old , w ,n ,i , j);
+    kernel2D<<<grid,block>>>(d_current, d_old, d_w, n );
+    cudaDeviceSynchronize();
 
-        // magnetic moment gets the value of the SIGN of the weighted influence of its neighbors
-        if(fabs(influence) < 10e-7){
-          current(i,j,n) = old(i,j,n); // remains the same in the case that the weighted influence is zero
-        }
-        else if(influence > 10e-7){
-          current(i,j,n) = 1;
-        }
-        else if(influence < 0){
-          current(i,j,n) = -1;
-        }
-        // save result in G
-        G(i,j,n) = current(i,j,n);
-      }
-    }
+    cudaMemcpy(old, d_old, n*n*sizeof(int), cudaMemcpyDeviceToHost );
+    cudaMemcpy(current, d_current, n*n*sizeof(int), cudaMemcpyDeviceToHost );
+
+    // save result in G
+    memcpy(G , current , n*n*sizeof(int) );
 
     // swap the pointers for the next iteration
-    swapElement(&old,&current);
-    // tmp = old;
-    // old = current;
-    // current= tmp;
+    swapElement(&d_old,&d_current);
 
     // terminate if no changes are made
     int areEqual = 0;
@@ -92,6 +129,12 @@ void ising( int *G, double *w, int k, int n){
       exit(0);
     }
   }
+
+  free(old);
+  free(current);
+  cudaFree(d_old);
+  cudaFree(d_current);
+  cudaFree(d_w);
 }
 
 int main(int argc, const char* argv[]){
