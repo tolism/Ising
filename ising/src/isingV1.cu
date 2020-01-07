@@ -72,7 +72,7 @@ void ising( int *G, double *w, int k, int n){
 
   int * d_old;
   int * d_current;
-  double * d_w;// na valw void ** skatakia
+  double * d_w;
   int *d_flag ;
   int flag ;
   //Host memory allocation and leak check
