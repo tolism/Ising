@@ -14,7 +14,7 @@ MAKE TOTOTOTO
 
 ### Prerequisites
 
-To run local , gpu must support cuda .
+To run local , gpu must support cuda.
 
 ```
 AADADADADADAD
@@ -23,4 +23,4 @@ AADADADADADAD
 ## Authors
 
 * **Apostolos Moustaklis**  
-* **Charis Papadakis **  
+* **Charis Papadakis**  
