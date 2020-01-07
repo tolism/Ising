@@ -8,10 +8,10 @@ To execute the versions
 ```
 inside ising file 
 make all   // to create all the executables 
-./src/isingV0  **for the sequential**
-./src/isingV0  **for Version 1**
-./src/isingV1  **for Version 2** 
-./src/isingV2  **for Version 3** 
+./src/isingV0  For the sequential
+./src/isingV0  For Version 1
+./src/isingV1  For Version 2
+./src/isingV2  For Version 3
 
 ```
 
