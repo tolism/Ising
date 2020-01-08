@@ -7,7 +7,7 @@ Parallel and Distributed Systems : 3rd assignment
 To execute the versions 
 ```
 inside ising file 
-make all   // to create all the executables 
+make all    #to create all the executables 
 ./src/isingV0  For the sequential
 ./src/isingV0  For Version 1
 ./src/isingV1  For Version 2
@@ -19,6 +19,7 @@ make all   // to create all the executables
 ### Prerequisites
 
 To run local , gpu must support cuda.
+
 
 ## Authors
 
