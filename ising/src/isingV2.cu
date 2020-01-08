@@ -131,18 +131,17 @@ void kernel2D(int *d_current, int *d_old, double *d_w, int n , int * d_flag)
   int r = blockIdx.x * blockDim.x + threadIdx.x;
   int c = blockIdx.y * blockDim.y + threadIdx.y;
 
-  // Check if within bounds.
-  if ((c >= n) || (r >= n))
-  return;
+  
 
   for(int i = r; i<n; i+=blockDim.x*gridDim.x){
     for(int j = c; j<n; j+=blockDim.y*gridDim.y){
-
+     if((i<n)&&(j<n)){
       for(int ii=0; ii<5; ii++){
         for(int jj=0; jj<5; jj++){
           influence +=  d_w(ii,jj) * d_old((i-2+n+ii)%n, (j-2+n+jj)%n, n);
         }
       }
+     }
       // magnetic moment gets the value of the SIGN of the weighted influence of its neighbors
       if(fabs(influence) < 10e-7){
         d_current(i,j,n) = d_old(i,j,n); // remains the same in the case that the weighted influence is zero
