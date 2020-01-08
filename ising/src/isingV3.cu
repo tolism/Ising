@@ -22,6 +22,7 @@
 // Defines for the block and grid calculation
 #define BLOCK_SIZE_X 16
 #define BLOCK_SIZE_Y 16
+//The dimensions of the lattice
 #define N_X 517
 #define N_Y 517
 
@@ -64,8 +65,9 @@ void ising( int *G, double *w, int k, int n){
 
   //Grid and block construction
   dim3 block(BLOCK_SIZE_X,BLOCK_SIZE_Y);
-  dim3 grid((N_X+block.x-1)/block.x,(N_Y+block.y - 1)/block.y);
-
+  int grid_size_x  = (N_X + BLOCK_SIZE_X - 1) / BLOCK_SIZE_X;
+  int grid_size_y  = (N_Y + BLOCK_SIZE_Y - 1) / BLOCK_SIZE_Y;
+  dim3 grid(grid_size_x,grid_size_y);
   //Device memory allocation
   int * old = (int*) malloc(n*n*(size_t)sizeof(int)); // old spin lattice
   int * current = (int*) malloc(n*n*(size_t)sizeof(int)); // current spin lattice

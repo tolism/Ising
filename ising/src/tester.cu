@@ -101,25 +101,6 @@ int main(int argc, const char* argv[]){
     printf("k=11 Correct\n");
   }
 
-  srand(time(NULL));
-  int tn = 750;
-  int G[tn*tn]; // G that changes k times
-  for(int i=0; i<tn; i++){
-    for(int j =0; j<tn; j++){
-
-      *(G+i*tn+j) = 2*(rand()%2)-1;
-
-    }
-  }
-  clock_t start = clock();
-
-  // execution
-  ising(G, weights, 5, tn);
-
-  clock_t end = clock();
-  double exec_time = (end - start)/(double)CLOCKS_PER_SEC;
-
-  printf("%lf\n", exec_time);
 
   return 0;
   }

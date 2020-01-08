@@ -48,6 +48,7 @@ void ising( int *G, double *w, int k, int n){
 
   int * old = (int*) malloc(n*n*sizeof(int)); // old spin lattice
   int * current= (int*) malloc(n*n*sizeof(int)); // current spin lattice
+//  int * tmp;
   double influence; // weighted influence of the neighbors
   double flag = 1;
 
@@ -186,18 +187,11 @@ int main(int argc, const char* argv[]){
     printf("k=4 Correct\n");
   }
 
-  clock_t start = clock();
 
   // // execution
   // ising(G, weights, 100, 1000);
   // execution
   ising(G3, weights, 11 , n);
-
-
-  clock_t end = clock();
-  double exec_time = (end - start)/(double)CLOCKS_PER_SEC;
-
-  printf("%lf\n", exec_time);
 
 
 
